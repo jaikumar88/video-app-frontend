@@ -129,6 +129,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Button
                 color="inherit"
                 component={Link}
+                to="/join"
+                sx={{ mr: 1 }}
+              >
+                Join Meeting
+              </Button>
+              <Button
+                color="inherit"
+                component={Link}
                 to="/login"
                 sx={{ mr: 1 }}
               >

@@ -7,9 +7,6 @@ import {
   IconButton,
   Chip,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   List,
   ListItem,
   ListItemText,
@@ -31,7 +28,6 @@ import {
   CallEnd,
   Chat,
   People,
-  Settings,
   Send,
   Close,
   PersonAdd,
@@ -93,12 +89,14 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
 
   // Media state
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(
     new Map()
   );
 
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const remoteVideosRef = useRef<{ [key: string]: HTMLVideoElement | null }>(
     {}
   );

@@ -7,7 +7,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
 } from "@mui/material";
 import {
   VideoCall as VideoCallIcon,
@@ -44,8 +43,17 @@ const HomePage: React.FC = () => {
               size="large"
               component={Link}
               to="/login"
+              sx={{ mr: 2 }}
             >
               Sign In
+            </Button>
+            <Button
+              variant="text"
+              size="large"
+              component={Link}
+              to="/join"
+            >
+              Join Meeting
             </Button>
           </Box>
         </Box>

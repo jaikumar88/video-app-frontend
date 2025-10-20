@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import MeetingPage from "./pages/MeetingPage";
+import JoinByCodePage from "./pages/JoinByCodePage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import AdminPage from "./pages/AdminPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -30,12 +31,19 @@ const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
   const urlParams = new URLSearchParams(window.location.search);
   const hasInvitationToken = urlParams.has("token");
 
-  // Allow access if authenticated OR has invitation token
-  return isAuthenticated || hasInvitationToken ? (
-    <>{children}</>
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  // If authenticated, allow access
+  if (isAuthenticated) {
+    return <>{children}</>;
+  }
+
+  // If not authenticated but has invitation token, allow access
+  if (hasInvitationToken) {
+    return <>{children}</>;
+  }
+
+  // If not authenticated and no invitation token, redirect to login with return URL
+  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+  return <Navigate to={`/login?redirect=${returnUrl}`} replace />;
 };
 
 // Public Route Component (redirect to dashboard if authenticated)
@@ -90,6 +98,15 @@ const App: React.FC = () => {
           element={
             <Layout>
               <VerifyEmailPage />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/join"
+          element={
+            <Layout>
+              <JoinByCodePage />
             </Layout>
           }
         />

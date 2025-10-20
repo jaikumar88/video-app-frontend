@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { loginUser } from "../store/slices/authSlice";
@@ -19,6 +19,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [searchParams] = useSearchParams();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -43,7 +44,13 @@ const LoginPage: React.FC = () => {
         loginUser({ email_or_phone: email, password }) as any
       );
       if (result.type === "auth/loginUser/fulfilled") {
-        navigate("/dashboard");
+        // Check if there's a redirect URL in the search params
+        const redirectUrl = searchParams.get("redirect");
+        if (redirectUrl) {
+          navigate(decodeURIComponent(redirectUrl));
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err) {
       console.error("Login failed:", err);
