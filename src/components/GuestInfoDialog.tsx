@@ -27,31 +27,31 @@ const GuestInfoDialog: React.FC<GuestInfoDialogProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const newErrors: { name?: string; email?: string } = {};
-    
+
     if (!name.trim()) {
       newErrors.name = "Name is required";
     }
-    
+
     // Basic email validation if provided
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
       newErrors.email = "Please enter a valid email address";
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     const guestInfo: { name: string; email?: string } = {
       name: name.trim(),
     };
-    
+
     if (email.trim()) {
       guestInfo.email = email.trim();
     }
-    
+
     onSubmit(guestInfo);
   };
 
@@ -70,7 +70,7 @@ const GuestInfoDialog: React.FC<GuestInfoDialogProps> = ({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Please provide your information to join the meeting.
           </Typography>
-          
+
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
               autoFocus
@@ -82,7 +82,7 @@ const GuestInfoDialog: React.FC<GuestInfoDialogProps> = ({
               required
               fullWidth
             />
-            
+
             <TextField
               label="Email Address"
               type="email"
@@ -94,7 +94,7 @@ const GuestInfoDialog: React.FC<GuestInfoDialogProps> = ({
             />
           </Box>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button type="submit" variant="contained">

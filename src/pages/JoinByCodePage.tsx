@@ -15,14 +15,21 @@ import { useNavigate } from "react-router-dom";
 import { meetingApi } from "../services/meetingApi";
 
 const JoinByCodePage: React.FC = () => {
-  const [invitationCode, setInvitationCode] = useState("");
+  const [meetingId, setMeetingId] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleJoinMeeting = async () => {
-    if (!invitationCode.trim()) {
-      setError("Please enter an invitation code");
+    if (!meetingId.trim()) {
+      setError("Please enter a meeting ID");
+      return;
+    }
+
+    if (!guestName.trim()) {
+      setError("Please enter your name");
       return;
     }
 
@@ -30,20 +37,31 @@ const JoinByCodePage: React.FC = () => {
     setError(null);
 
     try {
-      console.log(
-        "Attempting to accept invitation with code:",
-        invitationCode.trim()
-      );
-      console.log("API URL:", process.env.REACT_APP_API_URL);
+      console.log("Attempting to join meeting as guest:", {
+        meetingId: meetingId.trim(),
+        name: guestName.trim(),
+        email: guestEmail.trim() || undefined,
+      });
 
-      // Accept the invitation using the code
-      const response = await meetingApi.acceptInvitation(invitationCode.trim());
-      console.log("Invitation acceptance response:", response);
+      // Prepare guest info
+      const guestInfo: { name: string; email?: string } = {
+        name: guestName.trim(),
+      };
 
-      // Navigate to the meeting page with the meeting ID
-      navigate(
-        `/meeting/${response.meeting_id}?token=${invitationCode.trim()}`
+      // Only add email if provided
+      if (guestEmail.trim()) {
+        guestInfo.email = guestEmail.trim();
+      }
+
+      // Join meeting as guest
+      const response = await meetingApi.joinMeetingAsGuest(
+        meetingId.trim(),
+        guestInfo
       );
+      console.log("Guest join response:", response);
+
+      // Navigate to the meeting page
+      navigate(`/meeting/${meetingId.trim()}`);
     } catch (error: any) {
       console.error("Error joining meeting:", error);
       console.error("Error details:", {
@@ -55,10 +73,10 @@ const JoinByCodePage: React.FC = () => {
 
       if (error.response?.status === 404) {
         setError(
-          "Invalid invitation code. Please check the code and try again."
+          "Meeting not found. Please check the meeting ID and try again."
         );
-      } else if (error.response?.status === 400) {
-        setError("This invitation code has expired or is no longer valid.");
+      } else if (error.response?.status === 403) {
+        setError("Access denied. The meeting may require authentication.");
       } else if (error.code === "NETWORK_ERROR" || !error.response) {
         setError(
           "Cannot connect to server. Please check your internet connection."
@@ -85,21 +103,56 @@ const JoinByCodePage: React.FC = () => {
         <Box sx={{ textAlign: "center", mb: 3 }}>
           <MeetingRoom sx={{ fontSize: 48, color: "primary.main", mb: 2 }} />
           <Typography variant="h4" component="h1" gutterBottom>
-            Join Meeting
+            Join Meeting as Guest
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Enter your invitation code to join the meeting
+            Enter the meeting ID and your information to join
           </Typography>
         </Box>
 
         <Box sx={{ mb: 3 }}>
           <TextField
             fullWidth
-            label="Invitation Code"
-            placeholder="Enter invitation code (e.g., inv_123456789)"
-            value={invitationCode}
-            onChange={(e) => setInvitationCode(e.target.value)}
+            label="Meeting ID"
+            placeholder="Enter meeting ID (e.g., 48240530205)"
+            value={meetingId}
+            onChange={(e) => setMeetingId(e.target.value)}
             onKeyPress={handleKeyPress}
+            disabled={loading}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <QrCodeScanner />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Your Name"
+            placeholder="Enter your full name"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            required
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Email Address"
+            placeholder="Enter your email (optional)"
+            type="email"
+            value={guestEmail}
+            onChange={(e) => setGuestEmail(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            helperText="Optional - you can leave this blank"
+            sx={{ mb: 2 }}
+          />
             disabled={loading}
             InputProps={{
               startAdornment: (
@@ -122,7 +175,7 @@ const JoinByCodePage: React.FC = () => {
             variant="contained"
             size="large"
             onClick={handleJoinMeeting}
-            disabled={loading || !invitationCode.trim()}
+            disabled={loading || !meetingId.trim() || !guestName.trim()}
             sx={{ mb: 2 }}
           >
             {loading ? (
@@ -135,7 +188,7 @@ const JoinByCodePage: React.FC = () => {
 
         <Box sx={{ textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">
-            Don't have an invitation code?{" "}
+            Don't have a meeting ID?{" "}
             <Button
               variant="text"
               size="small"

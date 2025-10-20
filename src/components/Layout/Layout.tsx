@@ -132,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 to="/join"
                 sx={{ mr: 1 }}
               >
-                Join Meeting
+                Join as Guest
               </Button>
               <Button
                 color="inherit"

@@ -156,7 +156,9 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
           if (!user) {
             displayName =
               prompt("Please enter your name to join the meeting:") || "Guest";
-            email = prompt("Please enter your email (optional - you can leave this blank):");
+            email = prompt(
+              "Please enter your email (optional - you can leave this blank):"
+            );
           } else {
             displayName = `${user.first_name} ${user.last_name}`;
             email = user.email;
@@ -175,12 +177,12 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
             const guestInfo: { name: string; email?: string } = {
               name: displayName,
             };
-            
+
             // Only add email if it's provided and valid
             if (email && email.trim()) {
               guestInfo.email = email.trim();
             }
-            
+
             console.log("Guest info being sent:", guestInfo);
             const guestResponse = await fullMeetingApi.joinMeetingAsGuest(
               meetingId!,
