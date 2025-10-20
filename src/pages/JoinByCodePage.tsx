@@ -153,16 +153,6 @@ const JoinByCodePage: React.FC = () => {
             helperText="Optional - you can leave this blank"
             sx={{ mb: 2 }}
           />
-            disabled={loading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <QrCodeScanner />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 2 }}
-          />
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
