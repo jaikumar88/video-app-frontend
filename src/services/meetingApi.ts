@@ -204,8 +204,10 @@ class MeetingApiService {
       role?: 'participant' | 'moderator';
     }>
   ): Promise<{ message: string; sent_count: number }> {
+    const frontendUrl = process.env.REACT_APP_FRONTEND_URL || window.location.origin;
     const response = await apiClient.post(`/meetings/${meetingId}/invite`, {
-      invitations
+      invitations,
+      frontend_url: frontendUrl
     });
     return response.data;
   }
@@ -309,7 +311,10 @@ class MeetingApiService {
    * Generate meeting link for sharing
    */
   async generateMeetingLink(meetingId: string): Promise<{ meeting_url: string; expires_at?: string }> {
-    const response = await apiClient.post(`/meetings/${meetingId}/link`);
+    const frontendUrl = process.env.REACT_APP_FRONTEND_URL || window.location.origin;
+    const response = await apiClient.post(`/meetings/${meetingId}/link`, {
+      frontend_url: frontendUrl
+    });
     return response.data;
   }
 
@@ -410,10 +415,12 @@ class MeetingApiService {
     role: string = 'participant',
     message?: string
   ): Promise<InvitationListResponse> {
+    const frontendUrl = process.env.REACT_APP_FRONTEND_URL || window.location.origin;
     const response = await apiClient.post(`/meetings/${meetingId}/invite-multiple`, {
       emails,
       role,
-      message
+      message,
+      frontend_url: frontendUrl
     });
     return response.data;
   }
