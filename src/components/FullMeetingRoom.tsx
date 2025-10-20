@@ -69,7 +69,9 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invitationToken }) => {
+const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
+  invitationToken,
+}) => {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
   const { user, token } = useSelector((state: RootState) => state.auth);
@@ -103,7 +105,11 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
 
   // Initialize meeting
   useEffect(() => {
-    if (!meetingId || (!user && !invitationToken) || (!token && !invitationToken)) {
+    if (
+      !meetingId ||
+      (!user && !invitationToken) ||
+      (!token && !invitationToken)
+    ) {
       setError("Missing meeting information or authentication");
       setLoading(false);
       return;
@@ -127,7 +133,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
         meetingId: meetingId,
         hasUser: !!user,
         hasToken: !!token,
-        hasInvitationToken: !!invitationToken
+        hasInvitationToken: !!invitationToken,
       });
 
       let meetingInfo;
@@ -139,15 +145,17 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
         // Handle invitation token flow
         console.log("Processing invitation token:", invitationToken);
         console.log("API base URL:", process.env.REACT_APP_API_URL);
-        
+
         try {
           console.log("Calling acceptInvitation API...");
-          const invitationResponse = await fullMeetingApi.acceptInvitation(invitationToken);
+          const invitationResponse =
+            await fullMeetingApi.acceptInvitation(invitationToken);
           console.log("Invitation accepted successfully:", invitationResponse);
-          
+
           // For guests with invitation tokens, prompt for name if not authenticated
           if (!user) {
-            displayName = prompt("Please enter your name to join the meeting:") || "Guest";
+            displayName =
+              prompt("Please enter your name to join the meeting:") || "Guest";
             email = prompt("Please enter your email (optional):");
           } else {
             displayName = `${user.first_name} ${user.last_name}`;
@@ -168,7 +176,10 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
               name: displayName,
               email: email || undefined,
             };
-            const guestResponse = await fullMeetingApi.joinMeetingAsGuest(meetingId!, guestInfo);
+            const guestResponse = await fullMeetingApi.joinMeetingAsGuest(
+              meetingId!,
+              guestInfo
+            );
             meetingInfo = guestResponse.meeting;
           }
         } catch (inviteError: any) {
@@ -177,18 +188,22 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
             message: inviteError.message,
             response: inviteError.response?.data,
             status: inviteError.response?.status,
-            url: inviteError.config?.url
+            url: inviteError.config?.url,
           });
-          
+
           let errorMessage = "Invalid or expired invitation link.";
           if (inviteError.response?.status === 404) {
             errorMessage = "Invitation not found or expired.";
           } else if (inviteError.response?.status === 403) {
             errorMessage = "Access denied. Please check your invitation link.";
-          } else if (inviteError.code === 'NETWORK_ERROR' || inviteError.message.includes('Network Error')) {
-            errorMessage = "Network error. Please check if the backend server is running.";
+          } else if (
+            inviteError.code === "NETWORK_ERROR" ||
+            inviteError.message.includes("Network Error")
+          ) {
+            errorMessage =
+              "Network error. Please check if the backend server is running.";
           }
-          
+
           setError(errorMessage + " Please contact the meeting host.");
           setLoading(false);
           return;
@@ -203,7 +218,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
 
         displayName = `${user.first_name} ${user.last_name}`;
         email = user.email;
-        
+
         const joinData = {
           display_name: displayName,
           video_enabled: localVideoEnabled,
@@ -221,7 +236,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
 
       // Add current user as participant
       const currentParticipant: Participant = {
-        id: user?.id || 'guest-' + Date.now(),
+        id: user?.id || "guest-" + Date.now(),
         name: displayName || "Guest",
         email: email || "",
         avatar: user?.avatar_url || undefined,
@@ -861,7 +876,18 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
         meetingTitle={meetingTitle}
         onInvitationsSent={(invitations) => {
           console.log("Invitations sent:", invitations);
-          // You could show a success message or update participant list here
+          
+          // Generate the full invitation URLs for debugging
+          console.log("=== INVITATION URLS GENERATED ===");
+          invitations.forEach((invitation) => {
+            if (invitation.invitation_token) {
+              const invitationUrl = `${process.env.REACT_APP_FRONTEND_URL || window.location.origin}/meeting/${meetingId}?token=${invitation.invitation_token}`;
+              console.log(`✅ ${invitation.email}: ${invitationUrl}`);
+            } else {
+              console.error(`❌ Missing token for ${invitation.email} - Backend issue!`);
+            }
+          });
+          console.log("=================================");
         }}
       />
     </Box>

@@ -23,10 +23,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 };
 
 // Meeting Route Component (allows guest access with invitation token)
-const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const urlParams = new URLSearchParams(window.location.search);
-  const hasInvitationToken = urlParams.has('token');
+  const hasInvitationToken = urlParams.has("token");
 
   // Allow access if authenticated OR has invitation token
   return isAuthenticated || hasInvitationToken ? (

@@ -5,7 +5,7 @@ import FullMeetingRoom from "../components/FullMeetingRoom";
 
 const MeetingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const invitationToken = searchParams.get('token');
+  const invitationToken = searchParams.get("token");
 
   return (
     <Container maxWidth={false} disableGutters>
