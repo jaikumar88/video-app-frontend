@@ -118,6 +118,18 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
       setLoading(true);
       setError(null);
 
+      // Debug environment variables
+      console.log("Environment check:", {
+        NODE_ENV: process.env.NODE_ENV,
+        API_URL: process.env.REACT_APP_API_URL,
+        WS_URL: process.env.REACT_APP_WS_URL,
+        FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL,
+        meetingId: meetingId,
+        hasUser: !!user,
+        hasToken: !!token,
+        hasInvitationToken: !!invitationToken
+      });
+
       let meetingInfo;
       let displayName;
       let email;
@@ -125,9 +137,13 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
 
       if (invitationToken) {
         // Handle invitation token flow
+        console.log("Processing invitation token:", invitationToken);
+        console.log("API base URL:", process.env.REACT_APP_API_URL);
+        
         try {
+          console.log("Calling acceptInvitation API...");
           const invitationResponse = await fullMeetingApi.acceptInvitation(invitationToken);
-          console.log("Invitation accepted:", invitationResponse);
+          console.log("Invitation accepted successfully:", invitationResponse);
           
           // For guests with invitation tokens, prompt for name if not authenticated
           if (!user) {
@@ -155,9 +171,25 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
             const guestResponse = await fullMeetingApi.joinMeetingAsGuest(meetingId!, guestInfo);
             meetingInfo = guestResponse.meeting;
           }
-        } catch (inviteError) {
+        } catch (inviteError: any) {
           console.error("Failed to accept invitation:", inviteError);
-          setError("Invalid or expired invitation link. Please contact the meeting host.");
+          console.error("Error details:", {
+            message: inviteError.message,
+            response: inviteError.response?.data,
+            status: inviteError.response?.status,
+            url: inviteError.config?.url
+          });
+          
+          let errorMessage = "Invalid or expired invitation link.";
+          if (inviteError.response?.status === 404) {
+            errorMessage = "Invitation not found or expired.";
+          } else if (inviteError.response?.status === 403) {
+            errorMessage = "Access denied. Please check your invitation link.";
+          } else if (inviteError.code === 'NETWORK_ERROR' || inviteError.message.includes('Network Error')) {
+            errorMessage = "Network error. Please check if the backend server is running.";
+          }
+          
+          setError(errorMessage + " Please contact the meeting host.");
           setLoading(false);
           return;
         }
