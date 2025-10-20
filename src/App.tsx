@@ -42,7 +42,9 @@ const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
   }
 
   // If not authenticated and no invitation token, redirect to login with return URL
-  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+  const returnUrl = encodeURIComponent(
+    window.location.pathname + window.location.search
+  );
   return <Navigate to={`/login?redirect=${returnUrl}`} replace />;
 };
 

@@ -30,15 +30,20 @@ const JoinByCodePage: React.FC = () => {
     setError(null);
 
     try {
-      console.log("Attempting to accept invitation with code:", invitationCode.trim());
+      console.log(
+        "Attempting to accept invitation with code:",
+        invitationCode.trim()
+      );
       console.log("API URL:", process.env.REACT_APP_API_URL);
-      
+
       // Accept the invitation using the code
       const response = await meetingApi.acceptInvitation(invitationCode.trim());
       console.log("Invitation acceptance response:", response);
-      
+
       // Navigate to the meeting page with the meeting ID
-      navigate(`/meeting/${response.meeting_id}?token=${invitationCode.trim()}`);
+      navigate(
+        `/meeting/${response.meeting_id}?token=${invitationCode.trim()}`
+      );
     } catch (error: any) {
       console.error("Error joining meeting:", error);
       console.error("Error details:", {
@@ -47,15 +52,21 @@ const JoinByCodePage: React.FC = () => {
         status: error.response?.status,
         url: error.config?.url,
       });
-      
+
       if (error.response?.status === 404) {
-        setError("Invalid invitation code. Please check the code and try again.");
+        setError(
+          "Invalid invitation code. Please check the code and try again."
+        );
       } else if (error.response?.status === 400) {
         setError("This invitation code has expired or is no longer valid.");
       } else if (error.code === "NETWORK_ERROR" || !error.response) {
-        setError("Cannot connect to server. Please check your internet connection.");
+        setError(
+          "Cannot connect to server. Please check your internet connection."
+        );
       } else {
-        setError(`Failed to join meeting: ${error.response?.data?.detail || error.message}`);
+        setError(
+          `Failed to join meeting: ${error.response?.data?.detail || error.message}`
+        );
       }
     } finally {
       setLoading(false);

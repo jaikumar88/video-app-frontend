@@ -10,7 +10,11 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { loginUser } from "../store/slices/authSlice";

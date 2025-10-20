@@ -38,6 +38,7 @@ import { RootState } from "../store";
 import { meetingApi } from "../services/api";
 import { meetingApi as fullMeetingApi } from "../services/meetingApi";
 import InviteParticipantsDialog from "./InviteParticipantsDialog";
+import GuestInfoDialog from "./GuestInfoDialog";
 
 interface Participant {
   id: string;
@@ -85,6 +86,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [guestInfoDialogOpen, setGuestInfoDialogOpen] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState("Meeting");
 
   // Media state
@@ -154,7 +156,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
           if (!user) {
             displayName =
               prompt("Please enter your name to join the meeting:") || "Guest";
-            email = prompt("Please enter your email (optional):");
+            email = prompt("Please enter your email (optional - you can leave this blank):");
           } else {
             displayName = `${user.first_name} ${user.last_name}`;
             email = user.email;
@@ -170,10 +172,16 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
             meetingInfo = await meetingApi.joinMeeting(meetingId!, joinData);
             isHost = meetingInfo.host_user_id === user.id;
           } else {
-            const guestInfo = {
+            const guestInfo: { name: string; email?: string } = {
               name: displayName,
-              email: email || undefined,
             };
+            
+            // Only add email if it's provided and valid
+            if (email && email.trim()) {
+              guestInfo.email = email.trim();
+            }
+            
+            console.log("Guest info being sent:", guestInfo);
             const guestResponse = await fullMeetingApi.joinMeetingAsGuest(
               meetingId!,
               guestInfo

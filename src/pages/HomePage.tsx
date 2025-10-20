@@ -47,12 +47,7 @@ const HomePage: React.FC = () => {
             >
               Sign In
             </Button>
-            <Button
-              variant="text"
-              size="large"
-              component={Link}
-              to="/join"
-            >
+            <Button variant="text" size="large" component={Link} to="/join">
               Join Meeting
             </Button>
           </Box>
