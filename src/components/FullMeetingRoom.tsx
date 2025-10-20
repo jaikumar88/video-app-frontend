@@ -876,7 +876,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
         meetingTitle={meetingTitle}
         onInvitationsSent={(invitations) => {
           console.log("Invitations sent:", invitations);
-          
+
           // Generate the full invitation URLs for debugging
           console.log("=== INVITATION URLS GENERATED ===");
           invitations.forEach((invitation) => {
@@ -884,7 +884,9 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
               const invitationUrl = `${process.env.REACT_APP_FRONTEND_URL || window.location.origin}/meeting/${meetingId}?token=${invitation.invitation_token}`;
               console.log(`✅ ${invitation.email}: ${invitationUrl}`);
             } else {
-              console.error(`❌ Missing token for ${invitation.email} - Backend issue!`);
+              console.error(
+                `❌ Missing token for ${invitation.email} - Backend issue!`
+              );
             }
           });
           console.log("=================================");

@@ -104,13 +104,13 @@ const InviteParticipantsDialog: React.FC<InviteParticipantsDialogProps> = ({
 
       console.log("Invitation API response:", response);
       console.log("Individual invitations:", response.invitations);
-      
+
       // Log each invitation token for debugging
       response.invitations.forEach((invitation, index) => {
         console.log(`Invitation ${index + 1} for ${invitation.email}:`, {
           token: invitation.invitation_token,
           meeting_id: invitation.meeting_id,
-          expires_at: invitation.expires_at
+          expires_at: invitation.expires_at,
         });
       });
 
