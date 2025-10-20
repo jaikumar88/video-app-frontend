@@ -40,6 +40,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import { meetingApi } from "../services/api";
+import { meetingApi as fullMeetingApi } from "../services/meetingApi";
 import InviteParticipantsDialog from "./InviteParticipantsDialog";
 
 interface Participant {
@@ -125,7 +126,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
       if (invitationToken) {
         // Handle invitation token flow
         try {
-          const invitationResponse = await meetingApi.acceptInvitation(invitationToken);
+          const invitationResponse = await fullMeetingApi.acceptInvitation(invitationToken);
           console.log("Invitation accepted:", invitationResponse);
           
           // For guests with invitation tokens, prompt for name if not authenticated
@@ -151,7 +152,7 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invita
               name: displayName,
               email: email || undefined,
             };
-            const guestResponse = await meetingApi.joinMeetingAsGuest(meetingId!, guestInfo);
+            const guestResponse = await fullMeetingApi.joinMeetingAsGuest(meetingId!, guestInfo);
             meetingInfo = guestResponse.meeting;
           }
         } catch (inviteError) {
