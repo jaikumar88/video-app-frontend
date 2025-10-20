@@ -350,8 +350,16 @@ class MeetingApiService {
     name: string;
     email?: string;
   }): Promise<{
-    meeting: Meeting;
-    guest_token: string;
+    participant_id: string;
+    meeting_token: string;
+    webrtc_config: {
+      iceServers: Array<{
+        urls: string;
+        username?: string;
+        credential?: string;
+      }>;
+    };
+    websocket_url: string;
   }> {
     const response = await apiClient.post(`/meetings/${meetingId}/join-guest`, guestInfo);
     return response.data;

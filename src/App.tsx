@@ -30,7 +30,7 @@ const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const urlParams = new URLSearchParams(window.location.search);
   const hasInvitationToken = urlParams.has("token");
-  
+
   // Check if user has a guest session (stored when they successfully join as guest)
   const hasGuestSession = sessionStorage.getItem("guestMeetingAccess") !== null;
 

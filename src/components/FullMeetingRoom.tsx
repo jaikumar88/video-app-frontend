@@ -112,11 +112,14 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
     }
 
     // Check if user has access (authenticated OR has invitation token OR has guest session)
-    const hasGuestSession = sessionStorage.getItem("guestMeetingAccess") !== null;
+    const hasGuestSession =
+      sessionStorage.getItem("guestMeetingAccess") !== null;
     const hasAccess = (user && token) || invitationToken || hasGuestSession;
 
     if (!hasAccess) {
-      setError("No access to meeting. Please authenticate or use invitation link.");
+      setError(
+        "No access to meeting. Please authenticate or use invitation link."
+      );
       setLoading(false);
       return;
     }
@@ -194,7 +197,44 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
               meetingId!,
               guestInfo
             );
-            meetingInfo = guestResponse.meeting;
+            console.log("Guest join response:", guestResponse);
+            
+            // Create a mock meeting object from the guest response since backend doesn't return full meeting info
+            meetingInfo = {
+              id: meetingId!,
+              title: "Meeting", // Default title since backend doesn't provide it
+              description: undefined,
+              host_id: "unknown",
+              host_name: "Unknown Host",
+              meeting_url: window.location.href,
+              status: "active" as const,
+              created_at: new Date().toISOString(),
+              scheduled_at: undefined,
+              started_at: new Date().toISOString(),
+              ended_at: undefined,
+              duration_minutes: 60,
+              max_participants: 100,
+              participant_count: 1,
+              settings: {
+                allow_recording: false,
+                allow_screen_sharing: true,
+                require_host_approval: false,
+                mute_participants_on_join: false,
+                disable_video_on_join: false,
+              },
+              webrtc_config: {
+                ice_servers: guestResponse.webrtc_config.iceServers.map(server => ({
+                  urls: Array.isArray(server.urls) ? server.urls : [server.urls],
+                  username: server.username,
+                  credential: server.credential,
+                })),
+              },
+            };
+            
+            // Store guest token and websocket URL for future use
+            sessionStorage.setItem("guestToken", guestResponse.meeting_token);
+            sessionStorage.setItem("websocketUrl", guestResponse.websocket_url);
+            sessionStorage.setItem("participantId", guestResponse.participant_id);
           }
         } catch (inviteError: any) {
           console.error("Failed to accept invitation:", inviteError);

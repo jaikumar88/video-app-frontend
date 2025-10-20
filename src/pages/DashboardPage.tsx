@@ -265,8 +265,8 @@ const DashboardPage: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   Join Meeting
                 </Typography>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   size="small"
                   onClick={handleJoinMeeting}
                 >
@@ -461,7 +461,7 @@ const DashboardPage: React.FC = () => {
               value={meetingIdToJoin}
               onChange={(e) => setMeetingIdToJoin(e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   joinMeetingById();
                 }
               }}
