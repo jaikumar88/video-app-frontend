@@ -68,7 +68,7 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const FullMeetingRoom: React.FC = () => {
+const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({ invitationToken }) => {
   const { meetingId } = useParams<{ meetingId: string }>();
   const navigate = useNavigate();
   const { user, token } = useSelector((state: RootState) => state.auth);
@@ -102,27 +102,84 @@ const FullMeetingRoom: React.FC = () => {
 
   // Initialize meeting
   useEffect(() => {
-    if (!meetingId || !user || !token) {
+    if (!meetingId || (!user && !invitationToken) || (!token && !invitationToken)) {
       setError("Missing meeting information or authentication");
       setLoading(false);
       return;
     }
 
     initializeMeeting();
-  }, [meetingId, user, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meetingId, user, token, invitationToken]);
 
   const initializeMeeting = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Join the meeting
-      const joinData = {
-        display_name: `${user!.first_name} ${user!.last_name}`,
-        video_enabled: localVideoEnabled,
-        audio_enabled: localAudioEnabled,
-      };
-      const meetingInfo = await meetingApi.joinMeeting(meetingId!, joinData);
+      let meetingInfo;
+      let displayName;
+      let email;
+      let isHost = false;
+
+      if (invitationToken) {
+        // Handle invitation token flow
+        try {
+          const invitationResponse = await meetingApi.acceptInvitation(invitationToken);
+          console.log("Invitation accepted:", invitationResponse);
+          
+          // For guests with invitation tokens, prompt for name if not authenticated
+          if (!user) {
+            displayName = prompt("Please enter your name to join the meeting:") || "Guest";
+            email = prompt("Please enter your email (optional):");
+          } else {
+            displayName = `${user.first_name} ${user.last_name}`;
+            email = user.email;
+          }
+
+          // Join as guest or authenticated user
+          if (user && token) {
+            const joinData = {
+              display_name: displayName,
+              video_enabled: localVideoEnabled,
+              audio_enabled: localAudioEnabled,
+            };
+            meetingInfo = await meetingApi.joinMeeting(meetingId!, joinData);
+            isHost = meetingInfo.host_user_id === user.id;
+          } else {
+            const guestInfo = {
+              name: displayName,
+              email: email || undefined,
+            };
+            const guestResponse = await meetingApi.joinMeetingAsGuest(meetingId!, guestInfo);
+            meetingInfo = guestResponse.meeting;
+          }
+        } catch (inviteError) {
+          console.error("Failed to accept invitation:", inviteError);
+          setError("Invalid or expired invitation link. Please contact the meeting host.");
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Regular authenticated user flow
+        if (!user || !token) {
+          setError("Authentication required");
+          setLoading(false);
+          return;
+        }
+
+        displayName = `${user.first_name} ${user.last_name}`;
+        email = user.email;
+        
+        const joinData = {
+          display_name: displayName,
+          video_enabled: localVideoEnabled,
+          audio_enabled: localAudioEnabled,
+        };
+        meetingInfo = await meetingApi.joinMeeting(meetingId!, joinData);
+        isHost = meetingInfo.host_user_id === user.id;
+      }
+
       setMeeting(meetingInfo);
       setMeetingTitle(meetingInfo.title || "Meeting");
 
@@ -131,11 +188,11 @@ const FullMeetingRoom: React.FC = () => {
 
       // Add current user as participant
       const currentParticipant: Participant = {
-        id: user!.id,
-        name: `${user!.first_name} ${user!.last_name}`,
-        email: user!.email || "",
-        avatar: user!.avatar_url || undefined,
-        isHost: meetingInfo.host_user_id === user!.id,
+        id: user?.id || 'guest-' + Date.now(),
+        name: displayName || "Guest",
+        email: email || "",
+        avatar: user?.avatar_url || undefined,
+        isHost: isHost,
         videoEnabled: localVideoEnabled,
         audioEnabled: localAudioEnabled,
         screenSharing: false,

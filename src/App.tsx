@@ -22,6 +22,20 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+// Meeting Route Component (allows guest access with invitation token)
+const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasInvitationToken = urlParams.has('token');
+
+  // Allow access if authenticated OR has invitation token
+  return isAuthenticated || hasInvitationToken ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" replace />
+  );
+};
+
 // Public Route Component (redirect to dashboard if authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -93,9 +107,9 @@ const App: React.FC = () => {
         <Route
           path="/meeting/:meetingId"
           element={
-            <ProtectedRoute>
+            <MeetingRoute>
               <MeetingPage />
-            </ProtectedRoute>
+            </MeetingRoute>
           }
         />
 
