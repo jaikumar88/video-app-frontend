@@ -34,6 +34,8 @@ const DashboardPage: React.FC = () => {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [meetingLoading, setMeetingLoading] = useState(false);
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [meetingIdToJoin, setMeetingIdToJoin] = useState("");
   const [newMeetingTitle, setNewMeetingTitle] = useState("");
   const [newMeetingDescription, setNewMeetingDescription] = useState("");
   const { token, user } = useSelector((state: RootState) => state.auth);
@@ -102,6 +104,30 @@ const DashboardPage: React.FC = () => {
       alert("Failed to create meeting. Please try again.");
     } finally {
       setMeetingLoading(false);
+    }
+  };
+
+  const handleJoinMeeting = () => {
+    setJoinDialogOpen(true);
+  };
+
+  const joinMeetingById = async () => {
+    if (!meetingIdToJoin.trim()) {
+      alert("Please enter a meeting ID");
+      return;
+    }
+
+    setMeetingLoading(true);
+    try {
+      // Navigate directly to the meeting page - the meeting component will handle joining
+      navigate(`/meeting/${meetingIdToJoin.trim()}`);
+    } catch (error) {
+      console.error("Failed to join meeting:", error);
+      alert("Failed to join meeting. Please check the meeting ID.");
+    } finally {
+      setMeetingLoading(false);
+      setJoinDialogOpen(false);
+      setMeetingIdToJoin("");
     }
   };
 
@@ -239,7 +265,11 @@ const DashboardPage: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   Join Meeting
                 </Typography>
-                <Button variant="outlined" size="small">
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={handleJoinMeeting}
+                >
                   Join
                 </Button>
               </CardContent>
@@ -407,6 +437,44 @@ const DashboardPage: React.FC = () => {
               disabled={meetingLoading || !newMeetingTitle.trim()}
             >
               {meetingLoading ? "Creating..." : "Create Meeting"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Join Meeting Dialog */}
+        <Dialog
+          open={joinDialogOpen}
+          onClose={() => setJoinDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Join Meeting</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="meetingId"
+              label="Meeting ID"
+              placeholder="Enter meeting ID (e.g., 48240530205)"
+              fullWidth
+              variant="outlined"
+              value={meetingIdToJoin}
+              onChange={(e) => setMeetingIdToJoin(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  joinMeetingById();
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setJoinDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={joinMeetingById}
+              variant="contained"
+              disabled={meetingLoading || !meetingIdToJoin.trim()}
+            >
+              {meetingLoading ? "Joining..." : "Join Meeting"}
             </Button>
           </DialogActions>
         </Dialog>

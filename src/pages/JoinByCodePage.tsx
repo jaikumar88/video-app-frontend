@@ -60,6 +60,14 @@ const JoinByCodePage: React.FC = () => {
       );
       console.log("Guest join response:", response);
 
+      // Store guest session info for routing access
+      sessionStorage.setItem("guestMeetingAccess", JSON.stringify({
+        meetingId: meetingId.trim(),
+        guestName: guestInfo.name,
+        joinedAt: new Date().toISOString(),
+        token: response.guest_token
+      }));
+
       // Navigate to the meeting page
       navigate(`/meeting/${meetingId.trim()}`);
     } catch (error: any) {

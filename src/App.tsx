@@ -23,13 +23,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// Meeting Route Component (allows guest access with invitation token)
+// Meeting Route Component (allows guest access with invitation token or guest session)
 const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const urlParams = new URLSearchParams(window.location.search);
   const hasInvitationToken = urlParams.has("token");
+  
+  // Check if user has a guest session (stored when they successfully join as guest)
+  const hasGuestSession = sessionStorage.getItem("guestMeetingAccess") !== null;
 
   // If authenticated, allow access
   if (isAuthenticated) {
@@ -41,7 +44,12 @@ const MeetingRoute: React.FC<{ children: React.ReactNode }> = ({
     return <>{children}</>;
   }
 
-  // If not authenticated and no invitation token, redirect to login with return URL
+  // If not authenticated but has guest session, allow access
+  if (hasGuestSession) {
+    return <>{children}</>;
+  }
+
+  // If not authenticated and no invitation token or guest session, redirect to login with return URL
   const returnUrl = encodeURIComponent(
     window.location.pathname + window.location.search
   );

@@ -105,12 +105,18 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
 
   // Initialize meeting
   useEffect(() => {
-    if (
-      !meetingId ||
-      (!user && !invitationToken) ||
-      (!token && !invitationToken)
-    ) {
-      setError("Missing meeting information or authentication");
+    if (!meetingId) {
+      setError("Missing meeting ID");
+      setLoading(false);
+      return;
+    }
+
+    // Check if user has access (authenticated OR has invitation token OR has guest session)
+    const hasGuestSession = sessionStorage.getItem("guestMeetingAccess") !== null;
+    const hasAccess = (user && token) || invitationToken || hasGuestSession;
+
+    if (!hasAccess) {
+      setError("No access to meeting. Please authenticate or use invitation link.");
       setLoading(false);
       return;
     }
