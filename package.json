@@ -2,7 +2,7 @@
   "name": "worldclass-video-frontend",
   "version": "1.0.0",
   "description": "WorldClass Video Calling Platform - Frontend",
-  "homepage": "https://YOUR_GITHUB_USERNAME.github.io/video-app-frontend",
+  "homepage": "https://jaikumar88.github.io/video-app-frontend",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.1",
