@@ -193,7 +193,14 @@ export class WebSocketService {
       console.error('WebSocket is not connected');
     }
   }
-  
+
+  /**
+   * Send a custom message to the server
+   */
+  sendMessage(message: WebSocketMessage): void {
+    this.send(message);
+  }
+
   /**
    * Send WebRTC signaling message
    */

@@ -100,7 +100,6 @@ const RegisterPage: React.FC = () => {
         first_name: formData.firstName,
         last_name: formData.lastName,
         password: formData.password,
-        confirm_password: formData.confirmPassword,
       };
 
       if (formData.registrationType === "email") {

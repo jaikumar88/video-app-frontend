@@ -37,6 +37,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import { meetingApi } from "../services/api";
 import { meetingApi as fullMeetingApi } from "../services/meetingApi";
+import { WebRTCService } from "../services/WebRTCService";
+import { WebSocketService } from "../services/WebSocketService";
 import InviteParticipantsDialog from "./InviteParticipantsDialog";
 import GuestInfoDialog from "./GuestInfoDialog";
 
@@ -91,14 +93,19 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
 
   // Media state
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(
     new Map()
   );
 
+  // WebRTC and WebSocket services
+  const [webSocketService, setWebSocketService] =
+    useState<WebSocketService | null>(null);
+  const [webRTCService, setWebRTCService] = useState<WebRTCService | null>(
+    null
+  );
+
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const remoteVideosRef = useRef<{ [key: string]: HTMLVideoElement | null }>(
     {}
   );
@@ -127,6 +134,28 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
     initializeMeeting();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meetingId, user, token, invitationToken]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      // Cleanup WebSocket connection
+      if (webSocketService) {
+        webSocketService.disconnect();
+      }
+
+      // Cleanup WebRTC connections
+      if (webRTCService) {
+        webRTCService.disconnect();
+      }
+
+      // Stop local media stream
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+
+      console.log("FullMeetingRoom cleanup completed");
+    };
+  }, [webSocketService, webRTCService, localStream]);
 
   const initializeMeeting = async () => {
     try {
@@ -272,15 +301,15 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
       } else {
         // Check if this is a guest session (from direct meeting ID join)
         const guestSessionData = sessionStorage.getItem("guestMeetingAccess");
-        
+
         if (guestSessionData) {
           // Handle guest session - user already joined via JoinByCodePage
           console.log("Using existing guest session");
           const guestData = JSON.parse(guestSessionData);
-          
+
           displayName = guestData.guestName || "Guest";
           email = undefined;
-          
+
           // Create a mock meeting object from guest session data
           meetingInfo = {
             id: meetingId!,
@@ -308,7 +337,6 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
               ice_servers: [],
             },
           };
-          
         } else if (user && token) {
           // Regular authenticated user flow
           displayName = `${user.first_name} ${user.last_name}`;
@@ -348,6 +376,10 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
       };
 
       setParticipants([currentParticipant]);
+
+      // Initialize WebRTC and WebSocket after successful meeting join
+      await initializeWebRTCAndWebSocket(meetingInfo);
+
       setLoading(false);
     } catch (err) {
       console.error("Failed to initialize meeting:", err);
@@ -355,6 +387,83 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
         "Failed to join meeting. Please check your connection and try again."
       );
       setLoading(false);
+    }
+  };
+
+  const initializeWebRTCAndWebSocket = async (meetingInfo: any) => {
+    try {
+      console.log("Initializing WebRTC and WebSocket services...");
+
+      // Get stored WebSocket URL and meeting token
+      const websocketUrl = sessionStorage.getItem("websocketUrl");
+      const meetingToken = sessionStorage.getItem("meetingToken");
+
+      if (!websocketUrl || !meetingToken) {
+        console.error("Missing WebSocket URL or meeting token");
+        return;
+      }
+
+      // Initialize WebSocket service
+      const wsService = new WebSocketService();
+
+      // Set up WebSocket event handlers
+      wsService.onParticipantJoined = (participantId: string) => {
+        console.log("Participant joined:", participantId);
+        // Add participant to the list - this will be implemented when we get participant data from backend
+      };
+
+      wsService.onParticipantLeft = (participantId: string) => {
+        console.log("Participant left:", participantId);
+        setParticipants((prev) => prev.filter((p) => p.id !== participantId));
+      };
+
+      wsService.onParticipantMediaChange = (
+        participantId: string,
+        changes: any
+      ) => {
+        console.log("Participant media change:", participantId, changes);
+        setParticipants((prev) =>
+          prev.map((p) => (p.id === participantId ? { ...p, ...changes } : p))
+        );
+      };
+
+      // Connect to WebSocket
+      await wsService.connect(meetingId!, meetingToken);
+      setWebSocketService(wsService);
+
+      // Initialize WebRTC service
+      const rtcService = new WebRTCService(wsService);
+
+      // Set up WebRTC event handlers
+      rtcService.onRemoteStream = (
+        participantId: string,
+        stream: MediaStream
+      ) => {
+        console.log("Received remote stream from:", participantId);
+        setRemoteStreams((prev) => new Map(prev.set(participantId, stream)));
+
+        // Update video element for this participant
+        const videoElement = remoteVideosRef.current[participantId];
+        if (videoElement) {
+          videoElement.srcObject = stream;
+        }
+      };
+
+      rtcService.onConnectionStateChange = (
+        participantId: string,
+        state: string
+      ) => {
+        console.log(`WebRTC connection with ${participantId} state:`, state);
+      };
+
+      // Initialize WebRTC
+      await rtcService.initialize();
+      setWebRTCService(rtcService);
+
+      console.log("WebRTC and WebSocket services initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize WebRTC/WebSocket:", error);
+      // Don't throw error here, let the meeting continue with local media only
     }
   };
 
@@ -403,35 +512,73 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
     if (localStream) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        videoTrack.enabled = !localVideoEnabled;
-        setLocalVideoEnabled(!localVideoEnabled);
+        const newVideoState = !localVideoEnabled;
+        videoTrack.enabled = newVideoState;
+        setLocalVideoEnabled(newVideoState);
 
         // Update participant state
         setParticipants((prev) =>
           prev.map((p) =>
-            p.id === user?.id ? { ...p, videoEnabled: !localVideoEnabled } : p
+            p.id === (user?.id || "guest-" + Date.now())
+              ? { ...p, videoEnabled: newVideoState }
+              : p
           )
         );
+
+        // Notify other participants via WebSocket
+        if (webSocketService) {
+          webSocketService.sendMediaStateChange({
+            video_enabled: newVideoState,
+            audio_enabled: localAudioEnabled,
+            screen_sharing: screenSharing,
+          });
+        }
       }
     }
-  }, [localStream, localVideoEnabled, user?.id]);
+  }, [
+    localStream,
+    localVideoEnabled,
+    localAudioEnabled,
+    screenSharing,
+    user?.id,
+    webSocketService,
+  ]);
 
   const toggleAudio = useCallback(() => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
-        audioTrack.enabled = !localAudioEnabled;
-        setLocalAudioEnabled(!localAudioEnabled);
+        const newAudioState = !localAudioEnabled;
+        audioTrack.enabled = newAudioState;
+        setLocalAudioEnabled(newAudioState);
 
         // Update participant state
         setParticipants((prev) =>
           prev.map((p) =>
-            p.id === user?.id ? { ...p, audioEnabled: !localAudioEnabled } : p
+            p.id === (user?.id || "guest-" + Date.now())
+              ? { ...p, audioEnabled: newAudioState }
+              : p
           )
         );
+
+        // Notify other participants via WebSocket
+        if (webSocketService) {
+          webSocketService.sendMediaStateChange({
+            video_enabled: localVideoEnabled,
+            audio_enabled: newAudioState,
+            screen_sharing: screenSharing,
+          });
+        }
       }
     }
-  }, [localStream, localAudioEnabled, user?.id]);
+  }, [
+    localStream,
+    localAudioEnabled,
+    localVideoEnabled,
+    screenSharing,
+    user?.id,
+    webSocketService,
+  ]);
 
   const toggleScreenShare = useCallback(async () => {
     try {
@@ -653,7 +800,10 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
 
             {/* Remote participants */}
             {participants
-              .filter((p) => p.id !== user?.id)
+              .filter(
+                (p) =>
+                  p.id !== (user?.id || sessionStorage.getItem("participantId"))
+              )
               .map((participant) => (
                 <Grid item xs={12} md={6} key={participant.id}>
                   <Paper
@@ -661,20 +811,61 @@ const FullMeetingRoom: React.FC<{ invitationToken?: string | null }> = ({
                       position: "relative",
                       height: "100%",
                       minHeight: 300,
-                      bgcolor: "#333",
+                      bgcolor: "#000",
                       overflow: "hidden",
                       borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
                     }}
                   >
-                    <Avatar sx={{ width: 80, height: 80 }}>
-                      {participant.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </Avatar>
+                    {/* Remote video element */}
+                    <video
+                      ref={(el) => {
+                        if (el) {
+                          remoteVideosRef.current[participant.id] = el;
+                          // Set stream if available
+                          const stream = remoteStreams.get(participant.id);
+                          if (stream) {
+                            el.srcObject = stream;
+                          }
+                        }
+                      }}
+                      autoPlay
+                      playsInline
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display:
+                          participant.videoEnabled &&
+                          remoteStreams.has(participant.id)
+                            ? "block"
+                            : "none",
+                      }}
+                    />
+
+                    {/* Avatar fallback when video is off or no stream */}
+                    {(!participant.videoEnabled ||
+                      !remoteStreams.has(participant.id)) && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          bgcolor: "#333",
+                        }}
+                      >
+                        <Avatar sx={{ width: 80, height: 80 }}>
+                          {participant.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </Avatar>
+                      </Box>
+                    )}
 
                     <Box
                       sx={{

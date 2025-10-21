@@ -16,6 +16,8 @@ import {
   ListItemAvatar,
   Avatar,
   Badge,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Videocam,
@@ -29,6 +31,8 @@ import {
   People,
   Settings,
   MoreVert,
+  Link as LinkIcon,
+  ContentCopy,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -77,6 +81,7 @@ const MeetingRoom: React.FC = () => {
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -275,6 +280,18 @@ const MeetingRoom: React.FC = () => {
       console.error("Error ending meeting:", err);
     }
   }, [meetingId, meeting, user, navigate]);
+
+  const copyInviteLink = useCallback(async () => {
+    try {
+      const inviteLink = `${window.location.origin}/join/${meetingId}`;
+      await navigator.clipboard.writeText(inviteLink);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to copy invite link:", err);
+      alert("Failed to copy link. Please try again.");
+    }
+  }, [meetingId]);
 
   if (loading) {
     return (
@@ -553,6 +570,21 @@ const MeetingRoom: React.FC = () => {
           </IconButton>
         </Tooltip>
 
+        {/* Copy Invite Link */}
+        <Tooltip title={copySuccess ? "Link copied!" : "Copy invite link"}>
+          <IconButton
+            onClick={copyInviteLink}
+            sx={{
+              color: copySuccess ? "success.main" : "white",
+              "&:hover": {
+                bgcolor: "rgba(255,255,255,0.1)",
+              },
+            }}
+          >
+            {copySuccess ? <ContentCopy /> : <LinkIcon />}
+          </IconButton>
+        </Tooltip>
+
         {/* End/Leave meeting */}
         {meeting?.hostId === user?.id ? (
           <Tooltip title="End meeting">
@@ -623,6 +655,22 @@ const MeetingRoom: React.FC = () => {
           </List>
         </DialogContent>
       </Dialog>
+
+      {/* Copy Success Notification */}
+      <Snackbar
+        open={copySuccess}
+        autoHideDuration={3000}
+        onClose={() => setCopySuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setCopySuccess(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          Invite link copied to clipboard!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
