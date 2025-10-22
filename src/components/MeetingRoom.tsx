@@ -18,6 +18,10 @@ import {
   Badge,
   Snackbar,
   Alert,
+  Menu,
+  MenuItem,
+  Slider,
+  Stack,
 } from "@mui/material";
 import {
   Videocam,
@@ -33,6 +37,9 @@ import {
   MoreVert,
   Link as LinkIcon,
   ContentCopy,
+  VolumeUp,
+  VolumeOff,
+  VolumeMute,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -82,6 +89,11 @@ const MeetingRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [speakerMuted, setSpeakerMuted] = useState(false);
+  const [speakerVolume, setSpeakerVolume] = useState(100);
+  const [volumeMenuAnchor, setVolumeMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
 
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -292,6 +304,44 @@ const MeetingRoom: React.FC = () => {
       alert("Failed to copy link. Please try again.");
     }
   }, [meetingId]);
+
+  const toggleSpeaker = useCallback(() => {
+    const newMuted = !speakerMuted;
+    setSpeakerMuted(newMuted);
+
+    // Mute/unmute all remote video elements
+    Object.values(remoteVideosRef.current).forEach((video) => {
+      if (video) {
+        video.muted = newMuted;
+      }
+    });
+  }, [speakerMuted]);
+
+  const handleVolumeChange = useCallback(
+    (event: Event, newValue: number | number[]) => {
+      const volume = Array.isArray(newValue) ? newValue[0] : newValue;
+      setSpeakerVolume(volume);
+
+      // Set volume for all remote video elements
+      Object.values(remoteVideosRef.current).forEach((video) => {
+        if (video) {
+          video.volume = volume / 100;
+        }
+      });
+    },
+    []
+  );
+
+  const handleVolumeMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      setVolumeMenuAnchor(event.currentTarget);
+    },
+    []
+  );
+
+  const handleVolumeMenuClose = useCallback(() => {
+    setVolumeMenuAnchor(null);
+  }, []);
 
   if (loading) {
     return (
@@ -526,6 +576,28 @@ const MeetingRoom: React.FC = () => {
           </IconButton>
         </Tooltip>
 
+        {/* Speaker/Volume toggle */}
+        <Tooltip title={speakerMuted ? "Unmute speaker" : "Mute speaker"}>
+          <IconButton
+            onClick={handleVolumeMenuOpen}
+            sx={{
+              bgcolor: speakerMuted ? "error.main" : "transparent",
+              color: "white",
+              "&:hover": {
+                bgcolor: speakerMuted ? "error.dark" : "rgba(255,255,255,0.1)",
+              },
+            }}
+          >
+            {speakerMuted ? (
+              <VolumeOff />
+            ) : speakerVolume > 50 ? (
+              <VolumeUp />
+            ) : (
+              <VolumeMute />
+            )}
+          </IconButton>
+        </Tooltip>
+
         {/* Screen share toggle */}
         <Tooltip title={screenSharing ? "Stop sharing" : "Share screen"}>
           <IconButton
@@ -615,6 +687,53 @@ const MeetingRoom: React.FC = () => {
         )}
       </Box>
 
+      {/* Volume Control Menu */}
+      <Menu
+        anchorEl={volumeMenuAnchor}
+        open={Boolean(volumeMenuAnchor)}
+        onClose={handleVolumeMenuClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+        transformOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+      >
+        <MenuItem>
+          <Stack
+            spacing={2}
+            direction="row"
+            sx={{ minWidth: 200, px: 2, py: 1 }}
+          >
+            <IconButton
+              size="small"
+              onClick={toggleSpeaker}
+              sx={{ color: speakerMuted ? "error.main" : "inherit" }}
+            >
+              {speakerMuted ? <VolumeOff /> : <VolumeUp />}
+            </IconButton>
+            <Slider
+              value={speakerMuted ? 0 : speakerVolume}
+              onChange={handleVolumeChange}
+              aria-label="Volume"
+              min={0}
+              max={100}
+              disabled={speakerMuted}
+              sx={{ flexGrow: 1 }}
+            />
+            <Typography
+              variant="body2"
+              sx={{ minWidth: 35, textAlign: "right" }}
+            >
+              {speakerMuted ? "0%" : `${speakerVolume}%`}
+            </Typography>
+          </Stack>
+        </MenuItem>
+      </Menu>
+
+      {/* Participants Dialog */}
       {/* Participants Dialog */}
       <Dialog
         open={participantsOpen}
