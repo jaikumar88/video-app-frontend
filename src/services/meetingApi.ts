@@ -58,16 +58,19 @@ export interface Meeting {
 export interface Participant {
   id: string;
   user_id: string;
-  user_name: string;
-  user_email: string;
+  display_name?: string;
+  user_name?: string;
+  user_email?: string;
   role: 'host' | 'moderator' | 'participant';
   joined_at?: string;
   left_at?: string;
-  duration_minutes: number;
+  duration_minutes?: number;
   video_enabled: boolean;
   audio_enabled: boolean;
   screen_sharing: boolean;
-  connection_quality: string;
+  connection_quality?: string;
+  status?: string;
+  join_time?: string;
 }
 
 export interface MeetingListResponse {
@@ -107,7 +110,7 @@ class MeetingApiService {
    * Create a new meeting
    */
   async createMeeting(meetingData: CreateMeetingRequest): Promise<Meeting> {
-    const response = await apiClient.post('/meetings', meetingData);
+    const response = await apiClient.post('/meetings/', meetingData);
     return response.data;
   }
 
@@ -146,7 +149,7 @@ class MeetingApiService {
       audio_enabled: true,
       ...joinData
     };
-    const response = await apiClient.post(`/meetings/${meetingId}/join`, defaultJoinData);
+    const response = await apiClient.post(`/meetings/${meetingId}/join/`, defaultJoinData);
     return response.data;
   }
 
@@ -185,10 +188,7 @@ class MeetingApiService {
   /**
    * Get meeting participants
    */
-  async getMeetingParticipants(meetingId: string): Promise<{
-    participants: Participant[];
-    total: number;
-  }> {
+  async getMeetingParticipants(meetingId: string): Promise<Participant[]> {
     const response = await apiClient.get(`/meetings/${meetingId}/participants`);
     return response.data;
   }

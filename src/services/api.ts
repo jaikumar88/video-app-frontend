@@ -117,7 +117,7 @@ export const meetingApi = {
   },
 
   createMeeting: async (data: { title: string; description?: string; scheduled_time?: string }) => {
-    const response = await apiClient.post('/meetings', data);
+    const response = await apiClient.post('/meetings/', data);
     return response.data;
   },
 
